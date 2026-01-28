@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import os
-
+from ecbdata import ecbdata
 
 # print(msft.financials)
 
@@ -42,6 +42,28 @@ def download_ohlcv_to_csv(ticker, start_date, end_date, dinterval, output_folder
     print(f"Rows downloaded: {len(df)}")
     print("-" * 30)
 
+def download_ecb_data(etick, start_date, end_date, output_folder="data"):
+    print(f"---Starting Download for {etick} ---")
+    print(f"Period: {start_date} to {end_date}")
+
+    dft = ecbdata.get_series(etick, start=start_date, end=end_date)
+
+
+    # Raise error if data can't be downloaded
+    if dft.empty:
+        raise ValueError (f"No data fround for {etick}. Check your dates or ticker symbol.")
+
+    dft['TIME_PERIOD'] = pd.to_datetime(dft['TIME_PERIOD'])
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    filename = f"{output_folder}/{etick}_{start_date}_to_{end_date}.csv"
+    dft.to_csv(filename)
+
+    print(f"Success! Data saved to: {filename}")
+    print(f"Rows downloaded: {len(dft)}")
+    print("-" * 30)
 
 # if __name__ == "__main__":
 #     try:
@@ -92,6 +114,10 @@ if __name__ == "__main__":
         "BTC-USD"
     ]
 
+    ecb_tick = [
+        "EXR.D.USD.EUR.SP00.A"
+    ]
+
     print(f"Starting Batch Download for {len(download_ticks)} Assets...\n")
 
     for ticker in download_ticks:
@@ -104,5 +130,15 @@ if __name__ == "__main__":
             )
         except ValueError as e:
             print(f"Skipping {ticker}: {e}")
+
+    for tick in ecb_tick:
+        try:
+            download_ecb_data(
+                etick=tick,
+                start_date="2024-01-01",
+                end_date="2026-01-28"
+            )
+        except ValueError as e:
+            print(f"Skipping {tick}: {e}")
 
     print("\nBatch Download Complete.")
