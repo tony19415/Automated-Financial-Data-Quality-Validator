@@ -4,8 +4,7 @@ Pipeline that ingests daily market data, runs automated quality checks and quara
 ## Progress:
 - Created custom python script to download data from yfinance into csv
 - Identify: null values, when high is lower than low, when volume is less than 0
+- CI/CD via GitHub Actions where the data gets automatically quarantined for manual analyst review
 
 ## To do:
-- Script to identify data quality
-- Save clean data into csv
 - Visualize data in PowerBI dashboard
