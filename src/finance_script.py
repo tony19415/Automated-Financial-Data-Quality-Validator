@@ -2,17 +2,15 @@ import yfinance as yf
 import pandas as pd
 import os
 
-msft = yf.Ticker("MSFT")
-
 
 # print(msft.financials)
 
 #print(msft.balancesheet)
 
-daily_data = yf.download("AAPL", start="2026-01-01", end="2026-01-21", interval="1d")
-hourly_data = yf.download("SPY", start="2026-01-01", end="2026-01-21", interval="1h")
+# daily_data = yf.download("AAPL", start="2026-01-01", end="2026-01-21", interval="1d")
+# hourly_data = yf.download("SPY", start="2026-01-01", end="2026-01-21", interval="1h")
 
-print(hourly_data.head())
+# print(hourly_data.head())
 
 
 def download_ohlcv_to_csv(ticker, start_date, end_date, dinterval, output_folder="data"):
@@ -25,7 +23,10 @@ def download_ohlcv_to_csv(ticker, start_date, end_date, dinterval, output_folder
     # Raise error if data can't be downloaded
     if df.empty:
         raise ValueError (f"No data fround for {ticker}. Check your dates or ticker symbol.")
-        
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
     required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
     available_cols = [col for col in required_cols if col in df.columns]
     df = df[available_cols]
@@ -33,7 +34,8 @@ def download_ohlcv_to_csv(ticker, start_date, end_date, dinterval, output_folder
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    filename = f"{output_folder}/{ticker}_{start_date}_to_{end_date}_{dinterval}.csv"
+    safe_ticker = ticker.replace("=X", "")
+    filename = f"{output_folder}/{safe_ticker}_{start_date}_to_{end_date}_{dinterval}.csv"
     df.to_csv(filename)
 
     print(f"Success! Data saved to: {filename}")
@@ -78,15 +80,15 @@ def download_ohlcv_to_csv(ticker, start_date, end_date, dinterval, output_folder
 if __name__ == "__main__":
     # List of tickers to download
     download_ticks = [
-        "ASML.AS",
-        "UNA.AS",
+        # "ASML.AS",
+        # "UNA.AS",
         "EURUSD=X",
-        "TLT",
-        "HYG",
-        "ICLN",
-        "VNQ",
-        "GLD",
-        "EEM",
+        # "TLT",
+        # "HYG",
+        # "ICLN",
+        # "VNQ",
+        # "GLD",
+        # "EEM",
         "BTC-USD"
     ]
 
@@ -97,8 +99,8 @@ if __name__ == "__main__":
             download_ohlcv_to_csv(
                 ticker=ticker,
                 start_date="2024-01-01",
-                end_date="2026-01-25",
-                dinterval="1h"
+                end_date="2026-01-28",
+                dinterval="1d"
             )
         except ValueError as e:
             print(f"Skipping {ticker}: {e}")

@@ -4,12 +4,18 @@ import os
 
 def load_data(filepath):
     try:
-        df = pd.read_csv(filepath, parse_dates=['TIME_PERIOD'], index_col='TIME_PERIOD')
+        df = pd.read_csv(filepath, index_col=0)
+        
+        df.index = pd.to_datetime(df.index, utc=True)
+
         return df
     except FileNotFoundError:
         print(f"File not found: {filepath}")
         return None
-    
+    except Exception as e:
+        print(f"Error loading {filepath}: {e}")
+        return None
+
 def run_quality_checks(df, ticker_name):
     print(f"Running Quality Assurance on {ticker_name}...")
     
@@ -62,17 +68,31 @@ def check_with_benchmark(df_target, df_benchmark, threshold=0.01):
 
     print("Running external benchmark check")
 
+    # Check for the TIME_PERIOD column of ECB
+    time_col = next((col for col in df_benchmark.columns if col.startswith('TIME')), None)
+
+    if time_col:
+        df_benchmark[time_col] = pd.to_datetime(df_benchmark[time_col])
+        df_benchmark.set_index(time_col, inplace=True)
+    
+        # Convert to UTC
+        if df_benchmark.index.tz is None:
+            # If there are no timezone then assign to UTC
+            df_benchmark.index = df_benchmark.index.tz_localize('UTC')
+        else:
+            # If there are no timezone then assign to 
+            df_benchmark.index = df_benchmark.index.tz_convert('UTC')
+
     # Merge on Date Index
     combined = pd.merge(
         df_target[['Close']],
-        df_benchmark[['TIME_PERIOD', 'OBS_VALUE']],
+        df_benchmark[['OBS_VALUE']],
         left_index=True,
-        right_index=True,
-        suffixes=('_yf, _ecb')
+        right_index=True
     )
 
     # Calculate % Difference
-    combined['diff_pct'] = abs((combined['Close_yf'] - combined['OBS_VALUE_ecb']) / combined['OBS_VALUE_ecb'])
+    combined['diff_pct'] = abs((combined['Close'] - combined['OBS_VALUE']) / combined['OBS_VALUE'])
 
     # Find inconcistencies
     discrepancies = combined[combined['diff_pct']>threshold].copy()
@@ -83,14 +103,14 @@ def check_with_benchmark(df_target, df_benchmark, threshold=0.01):
     return discrepancies
 
 if __name__ == "__main__":
-    df_yf = load_data('data/EURUSD=X_yf.csv')
+    df_yf = load_data('data/EURUSD_2024-01-01_to_2026-01-28_1d.csv')
     
     # Run data quality checks
-    clean_data, quarantine_data = run_quality_checks(df_yf, "EURUSD_Simulated")
+    clean_data, quarantine_data = run_quality_checks(df_yf, "EURUSD=X")
 
     # Run check_with_benchmarks
 
-    df_ecb = load_data('data/EURUSD=X_ecb.csv')
+    df_ecb = load_data('data/EURUSD_ecb.csv')
 
     recon_failures = check_with_benchmark(clean_data, df_ecb)
 
