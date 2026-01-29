@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import os
@@ -110,7 +111,7 @@ if __name__ == "__main__":
 
     # Run check_with_benchmarks
 
-    df_ecb = load_data('data/EURUSD_ecb.csv')
+    df_ecb = load_data('data\EXR.D.USD.EUR.SP00.A_2024-01-01_to_2026-01-28.csv')
 
     recon_failures = check_with_benchmark(clean_data, df_ecb)
 
@@ -134,6 +135,12 @@ if __name__ == "__main__":
         print("\n--- Quarantine Details ---")
         print(quarantine_data[['Close', 'qa_reason']])
 
+        # Get today's data in Y_M_D format
+        today_str = datetime.now().strftime('%Y_%m_$d')
+
+        # Create dynamic filename
+        filename = f"{today_str}_quarantine_report.csv"
+
         # Save to CSV
-        quarantine_data.to_csv("quarantine_report.csv")
-        print("\n[Action] Quarantine report saved to 'quarantine_report.csv'")
+        quarantine_data.to_csv(filename)
+        print("\n[Action] Quarantine report saved to '{filename}'")
