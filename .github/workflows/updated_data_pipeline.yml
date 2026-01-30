@@ -1,4 +1,4 @@
-name: Daily Financial Data Pipeline
+name: Daily Automated Financial Data Pipeline
 
 # TRIGGER: Run this automatically or manually
 on:
