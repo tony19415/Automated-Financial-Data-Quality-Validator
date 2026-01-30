@@ -34,6 +34,8 @@ jobs:
       # Ensures code logic is sound before attempting to download data
       - name: Run Unit Tests
         run: pytest tests/
+        env:
+            PYTHONPATH: .
 
       # Step 5: Run the Main Pipeline (CD)
       # This runs the 'run_pipeline.py' which now handles parallel downloads & logging
