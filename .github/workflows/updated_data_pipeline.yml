@@ -42,7 +42,7 @@ jobs:
       - name: Run Data Pipeline
         run: |
           # Ensure we are in the root directory so config.yaml is found
-          python src/run_pipeline.py
+          python src/run_pipeline2.py
         continue-on-error: false # Fail the job if the pipeline crashes
 
       # Step 6: Save the Reports & Logs (The "Artifacts")
