@@ -125,7 +125,7 @@ if __name__ == "__main__":
             download_ohlcv_to_csv(
                 ticker=ticker,
                 start_date="2024-01-01",
-                end_date="2026-01-28",
+                end_date="2026-01-30",
                 dinterval="1d"
             )
         except ValueError as e:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
             download_ecb_data(
                 etick=tick,
                 start_date="2024-01-01",
-                end_date="2026-01-29"
+                end_date="2026-01-30"
             )
         except ValueError as e:
             print(f"Skipping {tick}: {e}")
