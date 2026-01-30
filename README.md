@@ -8,3 +8,6 @@ Pipeline that ingests daily market data, runs automated quality checks and quara
 
 ## To do:
 - Visualize data in PowerBI dashboard
+
+## Architecture Diagram
+<img width="1440" height="663" alt="Image" src="https://github.com/user-attachments/assets/4245d4a3-f0ba-4b4b-aea1-89eb8b4885b4" />
