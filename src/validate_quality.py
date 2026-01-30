@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     # Run check_with_benchmarks
 
-    df_ecb = load_data('data\EXR.D.USD.EUR.SP00.A_2024-01-01_to_2026-01-28.csv')
+    df_ecb = load_data('data/EXR.D.USD.EUR.SP00.A_2024-01-01_to_2026-01-28.csv')
 
     recon_failures = check_with_benchmark(clean_data, df_ecb)
 
