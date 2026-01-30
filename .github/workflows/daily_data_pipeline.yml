@@ -1,4 +1,4 @@
-name: Daily Financial Data Pipeline
+name: Old_Daily Financial Data Pipeline
 
 # TRIGGER: Run this automatically or manually
 on:
@@ -27,7 +27,7 @@ jobs:
       - name: Install Libraries
         run: |
           python -m pip install --upgrade pip
-          pip install pandas yfinance openpyxl ecbdata
+          pip install pandas yfinance openpyxl ecbdata PyYAML pytest
 
       # Step 4: Run Ingestion (Phase 1)
       - name: Run Data Ingestion
