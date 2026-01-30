@@ -1,0 +1,56 @@
+name: Daily Financial Data Pipeline
+
+# TRIGGER: Run this automatically or manually
+on:
+  # 1. Schedule: Runs at 07:00 AM UTC every day (Matches PGGM's morning process)
+  schedule:
+    - cron: '0 7 * * *'
+  # 2. Manual: Allows you to click "Run Workflow" button in GitHub for demos
+  workflow_dispatch:
+
+jobs:
+  run-data-quality-engine:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Get your code from the repo
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Step 3: Install Dependencies
+      # Added 'PyYAML' and 'ecbdata' to support the new features
+      - name: Install Libraries
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas yfinance openpyxl PyYAML ecbdata pytest
+
+      # Step 4: Run Unit Tests (CI)
+      # Ensures code logic is sound before attempting to download data
+      - name: Run Unit Tests
+        run: pytest tests/
+
+      # Step 5: Run the Main Pipeline (CD)
+      # This runs the 'run_pipeline.py' which now handles parallel downloads & logging
+      - name: Run Data Pipeline
+        run: |
+          # Ensure we are in the root directory so config.yaml is found
+          python src/run_pipeline.py
+        continue-on-error: false # Fail the job if the pipeline crashes
+
+      # Step 6: Save the Reports & Logs (The "Artifacts")
+      # Now includes 'pipeline.log' so you can debug issues from the GitHub UI
+      - name: Upload Data & Logs
+        if: always() # Run this even if previous steps fail so you can see logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-pipeline-outputs
+          path: |
+            data/*.csv
+            pipeline.log
+          retention-days: 5
