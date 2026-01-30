@@ -14,7 +14,7 @@ with open("config.yaml", "r") as f:
 
 # Configure Logging
 logging.basicConfig(
-    level=getattr(logging, config['pipeline']['setting']['log_level']),
+    level=getattr(logging, config['pipeline']['settings']['log_level']),
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("pipeline.log"),
