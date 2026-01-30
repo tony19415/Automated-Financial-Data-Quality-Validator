@@ -1,5 +1,5 @@
 import pytest
-import panda as pd
+import pandas as pd
 from src.validate_quality import run_quality_checks
 
 def test_high_low_logic_check():
