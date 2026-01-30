@@ -1,0 +1,19 @@
+pipeline:
+  settings:
+    log_level: "INFO"
+    max_workers: 5   # Number of parallel downloads
+    history_days: 7  # How far back to download
+    data_folder: "data"
+
+  yahoo_tickers:
+    - "AAPL"
+    - "EURUSD=X"
+    - "BTC-USD"
+    - "ASML.AS"
+
+  ecb_tickers:
+    - "EXR.D.USD.EUR.SP00.A"
+
+  # Maps a Yahoo Ticker to its specific ECB Benchmark Key
+  benchmark_mapping:
+    "EURUSD=X": "EXR.D.USD.EUR.SP00.A"
