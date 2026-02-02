@@ -113,11 +113,9 @@ def run_automation():
         if 'Date' in clean_df_full.columns:
             clean_df_full['Date'] = pd.to_datetime(clean_df_full['Date'])
             
-            # Remove timezone info so we can safely compare with 'cutoff_date'
-            if pd.api.types.is_datetime64_any_dtype(clean_df_full['Date']):
-                clean_df_full['Date'] = clean_df_full['Date'].dt.tz_localize(None) 
-            
-            clean_df_full = clean_df_full.set_index('Date')
+        # Remove timezone info so we can safely compare with 'cutoff_date'
+        if clean_df_full.index.tz is not None:
+            clean_df_full.index = clean_df_full.index.tz_localize(None)
 
         # calculate the cutoff (7 days ago)
         cutoff_date = datetime.now() - timedelta(days=7)
