@@ -33,7 +33,7 @@ def process_ecb_download(etick, start, end, folder):
     return etick, path
 
 def run_automation():
-    logger.info("--- Starting Weekly Data Pipeline ---\n")
+    logger.info("--- Starting Data Pipeline ---\n")
 
     # 1 Dynamic Dates
     days_back = config['pipeline']['settings']['history_days']
@@ -76,53 +76,70 @@ def run_automation():
                 if path:
                     ecb_files[etick] = path
 
-    # 4 Validation
-    logger.info("Ingestion Complete. Starting Validation...")
+    # 4 Processing Loop (Validation -> Slice -> Forecast)
+    logger.info("Ingestion Complete. Starting Processing Loop...")
     all_quarantine = pd.DataFrame()
     benchmark_map = config['pipeline']['benchmark_mapping']
 
     for ticker, file_path in yahoo_files.items():
-        df = load_data(file_path)
-        if df is None: continue
+        # A Load master data worth 730 days
+        df_full = load_data(file_path)
+        if df_full is None: continue
 
-        # A. Standard checks
-        clean_df, quarantine_df = run_quality_checks(df, ticker)
+        # B Validate Master Data
+        # Clean the FULL history to ensure model doesn't train on garbage
+        clean_df_full, quarantine_df_full = run_quality_checks(df_full, ticker)
 
-        # B. Benchmark check for EURUSD
+        # If data is too messy (empty after cleaning), skip it
+        if clean_df_full.empty:
+            logger.warning(f"Skipping {ticker}: No clean data remaining after validation")
+            continue
+
+        # Overwrite the original file with CLEAN full history
+        # Ensure file_path now points to trusted data for the ML model
+        clean_df_full.to_csv(file_path)
+
+        # C Create Weekly Slice for Analysts
+        # Slice clean data to just the last 7 days
+        if 'Date' in clean_df_full.columns:
+            clean_df_full['Date'] = pd.to_datetime(clean_df_full['Date'])
+            clean_df_full = clean_df_full.set_index('Date')
+
+        # calculate the cutoff (7 days ago)
+        cutoff_date = datetime.now() - timedelta(days=7)
+
+        # Create the slice
+        df_weekly = clean_df_full[clean_df_full.index >= cutoff_date].copy()
+
+        # Save slice for analysts
+        weekly_filename = file_path.replace(".csv", "_Analyst_Weekly_view.csv")
+        df_weekly.to_csv(weekly_filename)
+        logger.info(f"Created Analyst View for {ticker}: {weekly_filename}")        
+
+        # D. Benchmark check for EURUSD
+        # Only run this for the weekly data
         if ticker in benchmark_map:
             ecb_key = benchmark_map[ticker]
             if ecb_key in ecb_files:
                 logger.info(f"Triggering Benchmark Check: {ticker} vs {ecb_key}")
                 df_ecb = pd.read_csv(ecb_files[ecb_key])
 
-                recon_failures = check_with_benchmark(clean_df, df_ecb)
+                recon_failures = check_with_benchmark(df_weekly, df_ecb)
 
                 if not recon_failures.empty:
-                    logger.warning(f"Found {len(recon_failures)} mismatches for {ticker}")
-                    # Move failures from clean to quarantine
-                    clean_df = clean_df.drop(recon_failures.index)
+                    logger.warning(f"Found {len(recon_failures)} mismatches for {ticker} (Weekly View)")
+                    # Add to report
+                    quarantine_df_full = pd.concat([quarantine_df_full, recon_failures[['Close', 'qa_reason']]])
+                    
+        # Accumulate ALL Failures (Full History Logic Failures + Weekly Recon Failures)
+        if not quarantine_df_full.empty:
+            quarantine_df_full['Ticker'] = ticker
+            all_quarantine = pd.concat([all_quarantine, quarantine_df_full])
 
-                    # Align columns for quarantine
-                    recon_failures_clean = recon_failures[['Close', 'qa_reason']]
-                    quarantine_df = pd.concat([quarantine_df, recon_failures_clean])
-            else:
-                logger.warning(f"Benchmark {ecb_key} missing for {ticker}")
-
-        # Accumulate Failures
-        if not quarantine_df.empty:
-            quarantine_df['Ticker'] = ticker
-            all_quarantine = pd.concat([all_quarantine, quarantine_df])
-    
-    # 5 ML Forecasting & Anomaly Detection
-    logger.info("Starting ML Forecasting Module...")
-
-    # Only run this for specific major assets to save compute time
-    ml_targets = ["EURUSD=X"]
-
-    for ticker in ml_targets:
-        if ticker in yahoo_files:
-            file_path = yahoo_files[ticker]
-
+        # E ML Forecasting ON Full Clean History
+        # Only run on key assets
+        if ticker in ml_target_list:
+            logger.info(f"Training Prophet Model on full clean history for {ticker}...")
             # Run Prophet Model
             # Returns image path and boolean is_anomaly flag
             img_path, is_anomaly = generate_forecast(file_path, ticker)
@@ -139,7 +156,7 @@ def run_automation():
                 }])
                 all_quarantine = pd.concat([all_quarantine, anomaly_row])
 
-    # 6 Final reports
+    # 6 Final Reports
     if not all_quarantine.empty:
         report_name = f"{data_folder}/QUARANTINE_REPORT_{datetime.now().strftime('%Y_%m_%d')}.csv"        
         all_quarantine.to_csv(report_name)

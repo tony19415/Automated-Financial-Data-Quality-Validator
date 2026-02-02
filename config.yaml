@@ -1,19 +1,28 @@
 pipeline:
   settings:
     log_level: "INFO"
-    max_workers: 5   # Number of parallel downloads
-    history_days: 730  # How far back to download
+    max_workers: 5         # Number of parallel downloads
+    history_days: 730      # 2 Years (Required for ML Seasonality)
     data_folder: "data"
 
+  # 1. THE INGESTION LIST (Everything you want to download)
   yahoo_tickers:
     - "AAPL"
     - "EURUSD=X"
     - "BTC-USD"
-    - "ASML.AS"
+    - "ASML.AS"            # Dutch Tech (Relevant for PGGM)
 
+  # 2. THE BENCHMARK LIST (ECB Data)
   ecb_tickers:
-    - "EXR.D.USD.EUR.SP00.A"
+    - "EXR.D.USD.EUR.SP00.A" # Daily USD/EUR Reference Rate
 
+  # 3. THE ML TARGET LIST (New!)
+  # Only these specific tickers will trigger the expensive Prophet Model training.
+  # You can add or remove assets here without touching the Python code.
+  ml_tickers:
+    - "EURUSD=X"
+
+  # 4. RECONCILIATION MAPPING
   # Maps a Yahoo Ticker to its specific ECB Benchmark Key
   benchmark_mapping:
     "EURUSD=X": "EXR.D.USD.EUR.SP00.A"
