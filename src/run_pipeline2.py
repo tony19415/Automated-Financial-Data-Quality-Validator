@@ -60,8 +60,7 @@ def run_automation():
 
         for future in as_completed(futures):
             ticker, path = future.result()
-            if path:
-                yahoo_files[ticker] = path
+            if path: yahoo_files[ticker] = path
             else:
                 logger.error(f"Download failed for {ticker}")
     
@@ -76,8 +75,9 @@ def run_automation():
 
             for future in as_completed(futures):
                 etick, path = future.result()
-                if path:
-                    ecb_files[etick] = path
+                if path: ecb_files[etick] = path
+                else:
+                    logger.error(f"Download failed for {etick}")
 
     # 4 Processing Loop (Validation -> Slice -> Forecast)
     logger.info("Ingestion Complete. Starting Processing Loop...")
@@ -106,6 +106,11 @@ def run_automation():
         # Slice clean data to just the last 7 days
         if 'Date' in clean_df_full.columns:
             clean_df_full['Date'] = pd.to_datetime(clean_df_full['Date'])
+            
+            # Remove timezone info so we can safely compare with 'cutoff_date'
+            if pd.api.types.is_datetime64_any_dtype(clean_df_full['Date']):
+                clean_df_full['Date'] = clean_df_full['Date'].dt.tz_localize(None) 
+            
             clean_df_full = clean_df_full.set_index('Date')
 
         # calculate the cutoff (7 days ago)
