@@ -1,12 +1,13 @@
 import yaml
 import logging
 import pandas as pd
+import os
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fetch_data import download_ohlcv_to_csv, download_ecb_data
 from validate_quality import load_data, run_quality_checks, check_with_benchmark
-
+from forecast_analysis import generate_forecast
 
 # Load config
 with open("config.yaml", "r") as f:
@@ -43,7 +44,7 @@ def run_automation():
     start_date = (today - timedelta(days=days_back)).strftime('%Y-%m-%d')
     end_date = today.strftime('%Y-%m-%d')
 
-    logger.info(f"Time window: {start_date} to {end_date}")
+    logger.info(f"Time window: {start_date} to {end_date} ({days_back} days history)")
 
     # 2 Yahoo Finance Data Ingestion
     yahoo_files = {}
@@ -112,11 +113,42 @@ def run_automation():
             quarantine_df['Ticker'] = ticker
             all_quarantine = pd.concat([all_quarantine, quarantine_df])
     
-    # 5 Final reports
+    # 5 ML Forecasting & Anomaly Detection
+    logger.info("Starting ML Forecasting Module...")
+
+    # Only run this for specific major assets to save compute time
+    ml_targets = ["EURUSD=X"]
+
+    for ticker in ml_targets:
+        if ticker in yahoo_files:
+            file_path = yahoo_files[ticker]
+
+            # Run Prophet Model
+            # Returns image path and boolean is_anomaly flag
+            img_path, is_anomaly = generate_forecast(file_path, ticker)
+
+            if is_anomaly:
+                msg = "ML Anomaly: Price outside 95% Confidence Interval"
+                logger.error(f"[ML ALERT] {msg} for {ticker}")
+
+                # Add to Quarantine Report
+                anomaly_row = pd.DataFrame([{
+                    'Ticker': ticker,
+                    'Close': 'Check Forecast',
+                    'qa_reason': msg
+                }])
+                all_quarantine = pd.concat([all_quarantine, anomaly_row])
+
+    # 6 Final reports
     if not all_quarantine.empty:
         report_name = f"{data_folder}/QUARANTINE_REPORT_{datetime.now().strftime('%Y_%m_%d')}.csv"        
         all_quarantine.to_csv(report_name)
-        logger.error(f"Pipeline finished with ISSUES. Report: {report_name}")
+
+        # Only alert on New issues (Last 7 days)
+        # Assumes index is Datetime If not skip filtering for now or need to set index
+        # For safety in this script, just log the total count
+
+        logger.error(f"Pipeline finished with {len(all_quarantine)} TOTAL issues. Report: {report_name}")
     else:
         logger.info("Pipeline SUCCESSFULLY. No data issues found.")
 
