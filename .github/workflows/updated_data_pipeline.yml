@@ -1,10 +1,10 @@
-name: Daily Automated Financial Data Pipeline
+name: Weekly Automated Financial Data Pipeline
 
 # TRIGGER: Run this automatically or manually
 on:
   # 1. Schedule: Runs at 07:00 AM UTC every day (Matches PGGM's morning process)
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '0 7 * * 1'
   # 2. Manual: Allows you to click "Run Workflow" button in GitHub for demos
   workflow_dispatch:
 
@@ -22,13 +22,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip' # Caches dependencies to speed up future runs
 
       # Step 3: Install Dependencies
       # Added 'PyYAML' and 'ecbdata' to support the new features
       - name: Install Libraries
         run: |
           python -m pip install --upgrade pip
-          pip install pandas yfinance openpyxl PyYAML ecbdata pytest
+          pip install -r requirements.txt
 
       # Step 4: Run Unit Tests (CI)
       # Ensures code logic is sound before attempting to download data
@@ -45,14 +46,16 @@ jobs:
           python src/run_pipeline2.py
         continue-on-error: false # Fail the job if the pipeline crashes
 
-      # Step 6: Save the Reports & Logs (The "Artifacts")
+      # Step 6: Save Artifacts (Reports + ML Plots)
       # Now includes 'pipeline.log' so you can debug issues from the GitHub UI
-      - name: Upload Data & Logs
+      # Captures CSVs, Logs, and PNG Charts
+      - name: Upload Data, Logs & Forecasts
         if: always() # Run this even if previous steps fail so you can see logs
         uses: actions/upload-artifact@v4
         with:
           name: daily-pipeline-outputs
           path: |
             data/*.csv
+            data/*.png
             pipeline.log
           retention-days: 5
