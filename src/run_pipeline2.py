@@ -135,7 +135,15 @@ def run_automation():
             if ecb_key in ecb_files:
                 logger.info(f"Triggering Benchmark Check: {ticker} vs {ecb_key}")
                 df_ecb = pd.read_csv(ecb_files[ecb_key])
+                
+                # Normalize ECB data to be Timezone Naive
+                if 'Date' in df_ecb.columns:
+                    df_ecb['Date'] = pd.to_datetime(df_ecb['Date'])
+                    # Strip timzone if it exists
+                    if df_ecb['Date'].dt.tz is not None:
+                        df_ecb['Date'] = df_ecb['Date'].dt.tz_localize(None)
 
+                # Merge df_weekly and df_ecb
                 recon_failures = check_with_benchmark(df_weekly, df_ecb)
 
                 if not recon_failures.empty:
