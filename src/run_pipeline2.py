@@ -40,6 +40,9 @@ def run_automation():
     max_workers = config['pipeline']['settings']['max_workers']
     data_folder = config['pipeline']['settings']['data_folder']
 
+    # Load ML Targets from Config
+    ml_target_list = config['pipeline'].get('ml_tickers', [])
+
     today = datetime.now()
     start_date = (today - timedelta(days=days_back)).strftime('%Y-%m-%d')
     end_date = today.strftime('%Y-%m-%d')
