@@ -2,12 +2,18 @@ import yaml
 import logging
 import pandas as pd
 import os
+import yfinance as yf
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fetch_data import download_ohlcv_to_csv, download_ecb_data
 from validate_quality import load_data, run_quality_checks, check_with_benchmark
 from forecast_analysis import generate_forecast
+
+# Set custom cache location relative to project to avoid system level conflicts
+if not os.path.exists("cache"):
+    os.makedirs("cache")
+yf.set_tz_cache_location("cache")
 
 # Load config
 with open("config.yaml", "r") as f:
