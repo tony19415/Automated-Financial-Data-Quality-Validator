@@ -1,0 +1,11 @@
+pandas
+numpy
+yfinance
+openpyxl
+pyyaml
+ecbdata
+pytest
+prophet
+matplotlib
+plotly
+streamlit

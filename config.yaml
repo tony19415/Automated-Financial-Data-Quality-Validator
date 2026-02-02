@@ -2,7 +2,7 @@ pipeline:
   settings:
     log_level: "INFO"
     max_workers: 5   # Number of parallel downloads
-    history_days: 7  # How far back to download
+    history_days: 730  # How far back to download
     data_folder: "data"
 
   yahoo_tickers:
