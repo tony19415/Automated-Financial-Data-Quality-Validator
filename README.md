@@ -22,6 +22,7 @@ The pipeline is orchestrated via GitHub Actions on a weekly scheduel (Mondays 07
 - Audit Trails, full logging implementation (Info/Error levels) replacing the standard print statement for production observability
 
 ## Project Structure
+```
 financial-data-validator/
 ├── .github/workflows/
 │   └── daily_data_pipeline.yml  # CI/CD Orchestration (Weekly)
@@ -36,10 +37,27 @@ financial-data-validator/
 ├── config.yaml                  # Central Configuration (No hardcoding!)
 ├── requirements.txt             # Dependencies
 └── README.md                    # Documentation
+```
 
 ## Configuration
 This project uses decoupled configuration pattern, you can modify tickers, history windows or benchmarks without touching the Python code.
 Much safer when working with non technical staff for the organisation.
+
+```
+pipeline:
+  settings:
+    log_level: "INFO"
+    max_workers: 5         # Concurrency level
+    history_days: 730      # 2 Years (Required for ML Seasonality)
+  
+  yahoo_tickers:
+    - "AAPL"
+    - "EURUSD=X"
+    - "BTC-USD"
+    
+  ecb_tickers:
+    - "EXR.D.USD.EUR.SP00.A" # Daily USD/EUR Reference Rate
+```
 
 ## Machine Learning Module
 Pipeline uses Meta's Prophet model to add a statistical layer to data validation
