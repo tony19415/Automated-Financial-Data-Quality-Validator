@@ -26,3 +26,8 @@ pipeline:
   # Maps a Yahoo Ticker to its specific ECB Benchmark Key
   benchmark_mapping:
     "EURUSD=X": "EXR.D.USD.EUR.SP00.A"
+  
+  # 5. MLflow configuration
+  mlflow:
+    experiment_name: "Market_Forecasts_v1"
+    tracking_uri: "mlruns" # Save logs to a local folder
