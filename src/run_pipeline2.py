@@ -31,6 +31,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger("PipelineOrchestrator")
 
+def sanitize_index(df, ticker_name):
+    try:
+        # Column normalization
+        if 'TIME_PERIOD' in df.columns:
+            df = df.rename(columns={'TIME_PERIOD', 'Date'})
+        
+        # Set Index
+        if 'Date' in df.columns:
+            df = df.set_index('Date')
+        
+        # Datetime conversion
+        if not pd.api.types.is_datetime64_any_dtype(df.index):
+            df.index = pd.to_datetime(df.index)
+
+        # Timezone strip
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+
+        # Sort
+        df = df.sort_index()
+
+        return df
+    except Exception as e:
+        logger.error(f"Sanitization failed for {ticker_name}: {e}")
+        return df
+
 def process_yahoo_download(ticker, start, end, folder):
     path = download_ohlcv_to_csv(ticker, start, end, "1d", folder)
     return ticker, path
@@ -111,12 +137,7 @@ def run_automation():
 
         # C Create Weekly Slice for Analysts
         # Slice clean data to just the last 7 days
-        if 'Date' in clean_df_full.columns:
-            clean_df_full['Date'] = pd.to_datetime(clean_df_full['Date'])
-            
-        # Remove timezone info so we can safely compare with 'cutoff_date'
-        if clean_df_full.index.tz is not None:
-            clean_df_full.index = clean_df_full.index.tz_localize(None)
+        clean_df_full = sanitize_index(clean_df_full, ticker)
 
         # calculate the cutoff (7 days ago)
         cutoff_date = datetime.now() - timedelta(days=7)
@@ -134,27 +155,22 @@ def run_automation():
         if ticker in benchmark_map:
             ecb_key = benchmark_map[ticker]
             if ecb_key in ecb_files:
-                logger.info(f"Triggering Benchmark Check: {ticker} vs {ecb_key}")
-                df_ecb = pd.read_csv(ecb_files[ecb_key])
+                try:
+                    logger.info(f"Triggering Benchmark Check: {ticker} vs {ecb_key}")
+                    df_ecb = pd.read_csv(ecb_files[ecb_key])
                 
-                # Normalize ECB data to be Timezone Naive
-                if 'TIME_PERIOD' in df_ecb.columns:
-                    df_ecb['TIME_PERIOD'] = pd.to_datetime(df_ecb['TIME_PERIOD'])
+                    # Sanitize ECB Data
+                    df_ecb = sanitize_index(df_ecb, ecb_key)
 
-                    # Strip timzone force Naive
-                    if df_ecb['TIME_PERIOD'].dt.tz is not None:
-                        df_ecb['TIME_PERIOD'] = df_ecb['TIME_PERIOD'].dt.tz_localize(None)
-                    
-                    # Set as Index
-                    df_ecb = df_ecb.set_index('TIME_PERIOD')
+                    # Merge df_weekly and df_ecb
+                    recon_failures = check_with_benchmark(df_weekly, df_ecb)
 
-                # Merge df_weekly and df_ecb
-                recon_failures = check_with_benchmark(df_weekly, df_ecb)
-
-                if not recon_failures.empty:
-                    logger.warning(f"Found {len(recon_failures)} mismatches for {ticker} (Weekly View)")
-                    # Add to report
-                    quarantine_df_full = pd.concat([quarantine_df_full, recon_failures[['Close', 'qa_reason']]])
+                    if not recon_failures.empty:
+                        logger.warning(f"Found {len(recon_failures)} mismatches for {ticker} (Weekly View)")
+                        # Add to report
+                        quarantine_df_full = pd.concat([quarantine_df_full, recon_failures[['Close', 'qa_reason']]])
+                except Exception as e:
+                    logger.error(f"Benchmark check failed for {ticker}: {e}")
                     
         # Accumulate ALL Failures (Full History Logic Failures + Weekly Recon Failures)
         if not quarantine_df_full.empty:
