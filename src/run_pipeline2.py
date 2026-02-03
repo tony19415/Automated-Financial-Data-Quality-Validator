@@ -138,15 +138,15 @@ def run_automation():
                 df_ecb = pd.read_csv(ecb_files[ecb_key])
                 
                 # Normalize ECB data to be Timezone Naive
-                if 'Date' in df_ecb.columns:
-                    df_ecb['Date'] = pd.to_datetime(df_ecb['Date'])
+                if 'TIME_PERIOD' in df_ecb.columns:
+                    df_ecb['TIME_PERIOD'] = pd.to_datetime(df_ecb['TIME_PERIOD'])
 
                     # Strip timzone force Naive
-                    if df_ecb['Date'].dt.tz is not None:
-                        df_ecb['Date'] = df_ecb['Date'].dt.tz_localize(None)
+                    if df_ecb['TIME_PERIOD'].dt.tz is not None:
+                        df_ecb['TIME_PERIOD'] = df_ecb['TIME_PERIOD'].dt.tz_localize(None)
                     
                     # Set as Index
-                    df_ecb = df_ecb.set_index('Date')
+                    df_ecb = df_ecb.set_index('TIME_PERIOD')
 
                 # Merge df_weekly and df_ecb
                 recon_failures = check_with_benchmark(df_weekly, df_ecb)
