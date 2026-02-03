@@ -200,7 +200,7 @@ def run_automation():
     # 6 Final Reports
     if not all_quarantine.empty:
         report_name = f"{data_folder}/QUARANTINE_REPORT_{datetime.now().strftime('%Y_%m_%d')}.csv"        
-        all_quarantine.to_csv(report_name)
+        all_quarantine.to_csv(report_name) # Only save if errors exist
 
         # Only alert on New issues (Last 7 days)
         # Assumes index is Datetime If not skip filtering for now or need to set index
@@ -208,7 +208,7 @@ def run_automation():
 
         logger.error(f"Pipeline finished with {len(all_quarantine)} TOTAL issues. Report: {report_name}")
     else:
-        logger.info("Pipeline SUCCESSFULLY. No data issues found.")
+        logger.info("Pipeline finished SUCCESSFULLY. No data issues found.")
 
 if __name__ == "__main__":
     run_automation()
