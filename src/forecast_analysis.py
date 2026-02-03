@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from prophet import Prophet
 from prophet.diagnostics import performance_metrics
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ mlflow_config = config['pipeline'].get('mlflow', {})
 MLFLOW_tracking_URI = mlflow_config.get('tracking_uri', 'mlruns')
 EXP_NAME = mlflow_config.get('experiment_name', 'Default_Experiment')
 
-mlflow.set_tracking_uri('MLFLOW_tracking_URI')
+mlflow.set_tracking_uri(MLFLOW_tracking_URI)
 mlflow.set_experiment(EXP_NAME)
 
 def generate_forecast(file_path, ticker):
@@ -52,19 +53,24 @@ def generate_forecast(file_path, ticker):
 
         # Start MLFLOW RUN
         with mlflow.start_run(run_name=f"Forecast_{ticker}"):
-
+            
             # A. Define Hyperperameters
-            interval_width = 0.95
-            daily_seasonality = True
+            params = {
+                "interval_width": 0.95,
+                "daily_seasonality": True,
+                "changepoint_prior_scale": 0.05,
+                "seasonality_mode": 'multiplicative'
+            }
+            
 
             # B. Log Params
             mlflow.log_param("ticker", ticker)
             mlflow.log_param("model_type", "Prophet")
-            mlflow.log_param("interval_width", interval_width)
+            mlflow.log_params(params)
             mlflow.log_param("history_len", len(df))
 
             # C. Train model
-            m = Prophet(interval_width=interval_width, daily_seasonality=daily_seasonality)
+            m = Prophet(**params)
             m.fit(df)
 
             # D. Make Future Dataframe (30 Days)
@@ -76,9 +82,15 @@ def generate_forecast(file_path, ticker):
             metric_df = forecast.set_index('ds')[['yhat']].join(df.set_index('ds')[['y']], how='inner')
             mae = mean_absolute_error(metric_df['y'], metric_df['yhat'])
 
+            # MAPE (% Error) - Handle division by zero
+            y_true = metric_df['y']
+            y_pred = metric_df['yhat']
+            mape = np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+
             # Log Metric How good is the fit?
             mlflow.log_metric("mae", mae)
-            logger.info(f"Model trained for {ticker}. In-sample MAE: {mae:.4f}")
+            mlflow.log_metric("mape_percent", mape)
+            logger.info(f"Model trained for {ticker}. MAE: {mae:.2f} | MAPE: {mape:.2f}%")
 
             # F. Anomaly Detection Logic
             # Check if latest actual price is inside the confidence interval
@@ -87,20 +99,23 @@ def generate_forecast(file_path, ticker):
             latest_price = latest_actual['y']
 
             # Find prediction for that specific date
-            pred = forecast[forecast['ds'] == latest_date].iloc[0]
-            lower = pred['yhat_lower']
-            upper = pred['yhat_upper']
+            pred_row = forecast[forecast['ds'] == latest_date]
 
             is_anomaly = False
-            if latest_price < lower or latest_price > upper:
-                is_anomaly = True
-                mlflow.set_tag("anomaly_detected", "true")
-                anomaly_msg = f"ANOMALY DETECTED! {latest_date}: Price {latest_price:.4f} is outside range [{lower:.4f}, {upper:.4f}]"
-                logger.warning(f"[{ticker}] {anomaly_msg}")
+            if not pred_row.empty:
+                pred = pred_row.iloc[0]
+                lower = pred['yhat_lower']
+                upper = pred['yhat_upper']
+
+                if latest_price < lower or latest_price > upper:
+                    is_anomaly = True
+                    mlflow.set_tag("anomaly_detected", "true")
+                    anomaly_msg = f"ANOMALY DETECTED! {latest_date}: Price {latest_price} outside range [{lower:.2f}, {upper:.2f}]"
+                    logger.warning(f"[{ticker}] {anomaly_msg}")
             
             # G. Generate & Save Plot
             fig1 = m.plot(forecast)
-            plt.title(f"Forecast for {ticker} (MAE: {mae:.2f})")
+            plt.title(f"Forecast for {ticker} (MAPE: {mape:.2f}%)")
 
             # Save locally first
             plot_filename = f"{ticker}_forecast_plot.png"
