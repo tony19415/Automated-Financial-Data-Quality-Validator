@@ -6,6 +6,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# Custom modules I created
 from fetch_data import download_ohlcv_to_csv, download_ecb_data
 from validate_quality import load_data, run_quality_checks, check_with_benchmark
 from forecast_analysis import generate_forecast
@@ -139,9 +140,13 @@ def run_automation():
                 # Normalize ECB data to be Timezone Naive
                 if 'Date' in df_ecb.columns:
                     df_ecb['Date'] = pd.to_datetime(df_ecb['Date'])
-                    # Strip timzone if it exists
+
+                    # Strip timzone force Naive
                     if df_ecb['Date'].dt.tz is not None:
                         df_ecb['Date'] = df_ecb['Date'].dt.tz_localize(None)
+                    
+                    # Set as Index
+                    df_ecb = df_ecb.set_index('Date')
 
                 # Merge df_weekly and df_ecb
                 recon_failures = check_with_benchmark(df_weekly, df_ecb)
