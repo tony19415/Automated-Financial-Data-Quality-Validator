@@ -9,3 +9,4 @@ prophet
 matplotlib
 plotly
 streamlit
+mlflow
