@@ -38,7 +38,7 @@ financial-validator/
 ├── mlruns/                      # MLflow Experiment Logs
 ├── src/
 │   ├── fetch_data.py            # Parallel Download Engine
-│   ├── validate_quality.py      # DuckDB SQL Logic
+│   ├── validate_quality.py      # Validating data quality
 │   ├── forecast_analysis.py     # Prophet + MLflow Engine
 │   └── run_pipeline.py          # Main Orchestrator
 ├── Dockerfile                   # Container Definition
