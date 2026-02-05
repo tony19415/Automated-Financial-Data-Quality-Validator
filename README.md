@@ -1,15 +1,19 @@
 # Automated-Financial-Data-Quality-Validator
 ## Overview
-This project is an end-to-end DataOps Pipeline that ingests, validates and forecasts financial market data (Equities, Forex, Crypto, etc). It automates the morning checks typically performed by data stewards in asset management frims.
+This project is an end-to-end DataOps and MLOps Pipeline that ingests, validates and forecasts financial market data (Equities, Forex, Crypto, etc). It automates the morning checks typically performed by data stewards in asset management firms.
 
 Unlike simple scripts, this system features parallel processing, cross vendor validation (YahooFinance vs ECB) and Machine Learning anomaly detection using Meta's Prophet model.
+
+MLflow is integrated to track model drift (MAPE), log parameters and for version control forecast artifacts
+
+The architecture is set up so that from a single download the pipeline will serve both the deep learning model with 2 years of data and business analysts with a 7 day view.
 
 ---
 ## Architecture
 The pipeline is orchestrated via GitHub Actions on a weekly scheduel (Mondays 07:00 UTC).
 
 ## Architecture Diagram
-<img width="1440" height="663" alt="Image" src="https://github.com/user-attachments/assets/4245d4a3-f0ba-4b4b-aea1-89eb8b4885b4" />
+<img width="1440" height="663" alt="Image" src="https://github.com/user-attachments/assets/c4c022aa-949f-48c7-8f74-8db702c2dbe1" />
 
 ## Key Features
 - Parallel ingestion
@@ -20,27 +24,31 @@ The pipeline is orchestrated via GitHub Actions on a weekly scheduel (Mondays 07
     - Generates 30 day forecast with 95% Confidence interval
     - Auto Anomaly Detection, flags any current price that falls outside the model's predicted confidence interval
 - Audit Trails, full logging implementation (Info/Error levels) replacing the standard print statement for production observability
+- MLOps Experiment tracking
+    - Tracks MAPE (Mean Absolute Percentage Error) for every run
+    - Detects drifts by allowing us to see if the model's accuracy is degrading as market conditions change
+    - Automatically saves forecast plots and parameters for every experiment
 
 ## Project Structure
 ```
-financial-data-validator/
+financial-validator/
 ├── .github/workflows/
-│   └── daily_data_pipeline.yml  # CI/CD Orchestration (Weekly)
-├── data/                        # CSVs, Logs, and Forecast Plots
+│   └── weekly_pipeline.yml      # CI/CD Orchestration
+├── data/                        # Clean CSVs, Forecast Plots, & Reports
+├── mlruns/                      # MLflow Experiment Logs
 ├── src/
-│   ├── fetch_data.py            # Ingestion Modules (Yahoo + ECB)
-│   ├── validate_quality.py      # Logic Rules & Recon Engine
-│   ├── forecast_analysis.py     # ML Model (Prophet)
+│   ├── fetch_data.py            # Parallel Download Engine
+│   ├── validate_quality.py      # DuckDB SQL Logic
+│   ├── forecast_analysis.py     # Prophet + MLflow Engine
 │   └── run_pipeline.py          # Main Orchestrator
-├── tests/
-│   └── test_logic.py            # Pytest Unit Tests
-├── config.yaml                  # Central Configuration (No hardcoding!)
+├── Dockerfile                   # Container Definition
+├── config.yaml                  # Central Configuration
 ├── requirements.txt             # Dependencies
 └── README.md                    # Documentation
 ```
 
 ## Configuration
-This project uses decoupled configuration pattern, you can modify tickers, history windows or benchmarks without touching the Python code.
+This project uses decoupled configuration pattern, you can modify tickers, history windows, benchmarks, ML settings without touching the Python code.
 Much safer when working with non technical staff for the organisation.
 
 ```
@@ -57,6 +65,16 @@ pipeline:
     
   ecb_tickers:
     - "EXR.D.USD.EUR.SP00.A" # Daily USD/EUR Reference Rate
+  
+  # MLflow Settings
+  mlflow:
+    experiment_name: "Market_Forecasts_Production"
+    tracking_uri: "mlruns"
+
+  # Assets to Forecast
+  ml_tickers:
+    - "EURUSD=X"
+    - "BTC-USD"
 ```
 
 ## Machine Learning Module
