@@ -36,7 +36,7 @@ def sanitize_index(df, ticker_name):
     try:
         # Column normalization
         if 'TIME_PERIOD' in df.columns:
-            df = df.rename(columns={'TIME_PERIOD', 'Date'})
+            df = df.rename(columns={'TIME_PERIOD': 'Date'})
         
         # Set Index
         if 'Date' in df.columns:
