@@ -1,0 +1,53 @@
+name: Production DataOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 1. Setup Python Environment for Testing
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest  # Ensure pytest is available
+
+    # 2. RUN UNIT TESTS (The Quality Gate)
+    - name: Run Pytest
+      run: python -m pytest tests/
+      # If this step fails, the workflow stops here.
+
+    # 3. BUILD DOCKER CONTAINER
+    - name: Build Docker Image
+      run: docker build -t financial-validator .
+
+    # 4. RUN PRODUCTION PIPELINE
+    - name: Run Pipeline
+      run: |
+        docker run --rm \
+        -v ${{ github.workspace }}/data:/app/data \
+        -v ${{ github.workspace }}/mlruns:/app/mlruns \
+        financial-validator
+
+    # 5. ARCHIVE RESULTS
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-reports
+        path: |
+          data/
+          mlruns/
