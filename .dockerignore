@@ -1,0 +1,15 @@
+# Ignore local data nad logs
+data/
+mlruns/
+pipeline.logs
+cache/
+
+# Ignore Python artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+
+# Ignore Git
+.git
+.gitignore

@@ -4,9 +4,14 @@ yfinance
 openpyxl
 pyyaml
 ecbdata
-pytest
+pyarrow
+
+duckdb
+
 prophet
 matplotlib
 plotly
+scikit-learn
 streamlit
 mlflow
+pytest
