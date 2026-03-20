@@ -30,4 +30,4 @@ pipeline:
   # 5. MLflow configuration
   mlflow:
     experiment_name: "Market_Forecasts_v1"
-    tracking_uri: "mlruns" # Save logs to a local folder
+    tracking_uri: "sqlite:///mlflow.db" # Save logs to a local folder
