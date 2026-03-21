@@ -12,7 +12,7 @@ def test_duckdb_logic_error():
     """Test if DuckDB catches High < Low and volume <= 0"""
     # Create fake bad data
     data = {
-        'Date': ['2026-01-01', '2026-01-02'],
+        'Date': ['2026-01-01', '2026-01-02', '2026-01-03'],
         'High': [100, 50, 110],
         'Low': [90, 95, 105],
         'Close': [95, 92, 100],
