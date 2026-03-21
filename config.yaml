@@ -4,6 +4,7 @@ pipeline:
     max_workers: 5         # Number of parallel downloads
     history_days: 730      # 2 Years (Required for ML Seasonality)
     data_folder: "data"
+    failure_threshold: 0.50
 
   # 1. THE INGESTION LIST (Everything you want to download)
   yahoo_tickers:

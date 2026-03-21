@@ -55,6 +55,18 @@ def sanitize_index(df, ticker_name):
         if df.index.tz is not None:
             df.index = df.index.tz_localize(None)
 
+        # Unit Normalization
+        if ticker_name == "EURUSD=X" and not df.empty:
+            avg_price = df['Close'].mean()
+            if avg_price > 100 and avg_price < 2000:
+                logger.warning(f"Scale anomaly detected for {ticker_name} (~{avg_price:.2f}). Normalizing /1000")
+                for col in ['Open', 'High', 'Low', 'Close']:
+                    if col in df.columns:
+                        df[col] = df[col] / 1000
+            elif avg_price > 10000:
+                logger.critical(f"Data Type Mismatch: {ticker_name} contains prices around {avg_price:.0f}. This looks like Bitcoin data!")
+                return pd.DataFrame()
+
         # Sort
         df = df.sort_index()
 
@@ -83,7 +95,7 @@ def run_automation():
     ml_target_list = config['pipeline'].get('ml_tickers', [])
 
     # Circuit Breaker Config
-    FAILURE_THRESHOLD = 0.25
+    FAILURE_THRESHOLD = config['pipeline']['settings'].get('failure_threshold', 0.50)
     processed_count = 0
     failure_count = 0
 
@@ -170,7 +182,7 @@ def run_automation():
 
         # D. Benchmark check for EURUSD
         # Only run this for the weekly data
-        if ticker in benchmark_map:
+        if ticker in benchmark_map and not df_weekly.empty:
             ecb_key = benchmark_map[ticker]
             if ecb_key in ecb_files:
                 try:
