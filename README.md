@@ -108,12 +108,12 @@ Recognizing real world API inconsistencies, pipeline includes a harmonization la
 git clone https://github.com/yourusername/financial-validator.git
 ```
 
-2. Run with Docker
+2. Run with Docker:
 ```
 docker build -t financial-validator .
 docker run --rm -v "${PWD}/data:/app/data" -v "${PWD}/mlruns:/app/mlruns" financial-validator
 ```
-3. Inspect Logs & Metrics
+3. Inspect Logs & Metrics:
 ```
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
