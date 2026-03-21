@@ -23,7 +23,7 @@ def test_duckdb_logic_error():
     clean_df, quarantine_df = run_quality_checks(df, "TEST_TICKER")
 
     assert len(clean_df) == 1
-    assert len(quarantine_df) == 1
+    assert len(quarantine_df) == 2
     assert "High < Low" in quarantine_df.iloc[0]['qa_reason']
     assert "Volume <= 0" in quarantine_df.iloc[1]['qa_reason']
 

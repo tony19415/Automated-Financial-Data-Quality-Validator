@@ -45,6 +45,11 @@ def run_quality_checks(df, ticker_name):
 
         UNION ALL
 
+        SELECT Date, Close, 'Logic Error: Volume <= 0' as qua_reason
+        FROM market_data WHERE Volume <= 0
+
+        UNION ALL
+
         SELECT Date, Close, 'Missing Value: Close' as qa_reason
         FROM market_data
         WHERE Close IS NULL OR High IS NULL OR Low IS NULL        
@@ -58,7 +63,7 @@ def run_quality_checks(df, ticker_name):
             logger.warning(f"DuckDB found {len(quarantine_df)} logical errors in {ticker_name}")
 
             # Get list of bad dates to exclude
-            bad_dates = pd.to_datetime(quarantine_df['Date']).tolist()
+            bad_dates = pd.to_datetime(quarantine_df['Date'])
             clean_df = df[~df.index.isin(bad_dates)].copy()
 
             # Format Quarantine DF
