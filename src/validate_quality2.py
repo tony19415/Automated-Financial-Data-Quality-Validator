@@ -58,7 +58,7 @@ def run_quality_checks(df, ticker_name):
             logger.warning(f"DuckDB found {len(quarantine_df)} logical errors in {ticker_name}")
 
             # Get list of bad dates to exclude
-            bad_dates = quarantine_df['Date'].tolist()
+            bad_dates = pd.to_datetime(quarantine_df['Date']).tolist()
             clean_df = df[~df.index.isin(bad_dates)].copy()
 
             # Format Quarantine DF

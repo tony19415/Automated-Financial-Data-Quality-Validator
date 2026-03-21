@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Custom modules I created
 from fetch_data import download_ohlcv_to_csv, download_ecb_data
-from validate_quality import load_data, run_quality_checks, check_with_benchmark
+from validate_quality2 import load_data, run_quality_checks, check_with_benchmark
 from forecast_analysis import generate_forecast
 
 # Set custom cache location relative to project to avoid system level conflicts
@@ -33,11 +33,16 @@ logging.basicConfig(
 logger = logging.getLogger("PipelineOrchestrator")
 
 def sanitize_index(df, ticker_name):
+    """Ensures Date index is clean, sorted and timezone-naive"""
     try:
         # Column normalization
         if 'TIME_PERIOD' in df.columns:
             df = df.rename(columns={'TIME_PERIOD': 'Date'})
         
+        # Normalize ECB Value Column to 'Close'
+        if 'OBS_VALUE' in df.columns:
+            df = df.rename(columns={'OBS_VALUE': 'Close'})
+
         # Set Index
         if 'Date' in df.columns:
             df = df.set_index('Date')
