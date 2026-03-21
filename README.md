@@ -91,12 +91,32 @@ The project is fully automated using GitHub Actions
 - Checkout -> Install Depositories -> Run Tests (pytest) -> Run Pipeline -> Upload Artifacts (Held for 5 days)
 - All CSV reports, logs and forecast charts are available for download in the "Actions" tab after every run
 
+## Data Governance & Reliability
+1. Circuit Breaker Pattern
+To prevent "Data Poisoning", system calculates real time Failure Rate. If the percentage of corrupted or anomalous assets exceeds the failure_threshold (default: 50%) the system executes an emergency sys.exit(1).
 
-## Progress:
-- Created custom python script to download data from yfinance into csv
-- Identify: null values, when high is lower than low, when volume is less than 0
-- CI/CD via GitHub Actions where the data gets automatically quarantined for manual analyst review
+2. DuckDB SQL Validation
+Instead of slow row by row iteration, pipeline uses DuckDB for vectorized SQL validation. Allowing complex checks (verifying High >= Low) at fast speeds directly in memory
 
-## To do:
-- Visualize data in PowerBI dashboard
+3. Self Healing Unit Normalizer
+Recognizing real world API inconsistencies, pipeline includes a harmonization layer that detects scale anomalies and automatically normalizes data before storage.
 
+## Setup and Installation
+
+1. Clone the repository:
+```
+git clone https://github.com/yourusername/financial-validator.git
+```
+
+2. Run with Docker
+```
+docker build -t financial-validator .
+docker run --rm -v "${PWD}/data:/app/data" -v "${PWD}/mlruns:/app/mlruns" financial-validator
+```
+3. Inspect Logs & Metrics
+```
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+## Incident & Resolution Log
+Full history of technical hurdles such as handling yfinance API shifts, Docker volume pathing on Windows is documented in the TECHNICAL_DOC.md
