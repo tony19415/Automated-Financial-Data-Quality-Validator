@@ -13,7 +13,7 @@ The architecture is set up so that from a single download the pipeline will serv
 The pipeline is orchestrated via GitHub Actions on a weekly scheduel (Mondays 07:00 UTC).
 
 ## Architecture Diagram
-<img width="1440" height="663" alt="Image" src="https://github.com/user-attachments/assets/c4c022aa-949f-48c7-8f74-8db702c2dbe1" />
+<img width="1440" height="663" alt="Image" src="https://github.com/user-attachments/assets/7ff2b954-2e41-46c5-bae2-ab61e5f9249c" />
 
 ## Key Features
 - Parallel ingestion
