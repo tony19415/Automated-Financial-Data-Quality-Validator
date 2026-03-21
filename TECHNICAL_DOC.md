@@ -7,9 +7,13 @@ The document outlines the critical technical hurdles encountered during the deve
 
 | Error                                | Root Cause                                                                    | Resolution                                                                                               |
 |--------------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| Pandas MultiIndex Errors             | yfinance returns a MultiIndex when downloading specific ticker formats or multiple assets. | Implemented a flattening layer: df.columns = df.columns.get_level_values(0) to ensure downstream functions receive a standard DataFrame. |
+| Prophet Seasonality Failure          | Insufficient data for yearly seasonality (Prophet requires > 1 year of history). | Updated config.yaml to force history_days: 730 (2 years), ensuring statistical confidence in time-series trends. |
+Hardcoded Parameters | Tickers and file paths were originally hardcoded in src/, making the pipeline rigid. | Decoupled logic from configuration by implementing a yaml-driven ingestion engine. |
 | Docker: Invalid Reference Format     | Shell-specific syntax mismatch for the pwd command on Windows vs. Linux.      | Switched to ${PWD} for PowerShell and implemented quotes around volume paths to handle directory spaces. |
 | Docker: Daemon Not Running           | Docker Desktop engine was not initialized or WSL 2 integration was disabled.  | Initialized Docker Desktop and verified "Engine Running" status before executing builds                  |
 | ModuleNotFoundError (GitHub Actions) | Python's sys.path did not include the /src directory during Pytest execution. | Implemented a dynamic path injection in test_pipeline.py using sys.path.insert(0, os.path.abspath(...)). |
+| Git SHA Missing (Docker)             | The python:3.10-slim image lacked the git binary required by MLflow for version-controlled experiment tracking.| Modified the Dockerfile to include git in the system dependencies (apt-get install).|
 
 ---
 
@@ -20,6 +24,8 @@ The document outlines the critical technical hurdles encountered during the deve
 | TypeError: 'NoneType' object is not subscriptabl | yfinance API version mismatch due to upstream changes in Yahoo Finance's data structure. | Executed pip install --upgrade yfinance and cleared the local cache/ directory to force a fresh handshake. |
 | Data Poisoning (BTC in EURUSD)                   | Local file naming collision or variable mismatch during early testing phases.            | Implemented a Data Guard in the sanitization layer to trip the Circuit Breaker if FX prices exceed $5,000. |
 | ECB Connection Timeout                           | Network latency or server-side rate-limiting on the European Central Bank API            | Implemented a timeout parameter in the requests call and documented the need for a Retry Decorator.        |
+| Unit Scaling (1128.00 vs 1.128) | Yahoo Finance occasionally quotes FX pairs (like EURUSD) in pips/points rather than standard rates. | Added a Unit Normalizer that detects mean > 100 for FX and automatically scales the data by $/1000$. |
+| DuckDB Binder Error | Schematic mismatch: ECB data utilized OBS_VALUE while the pipeline expected Close. | Implemented a schema-normalization layer in the sanitize_index function before data reached the SQL engine. |
 
 ---
 
