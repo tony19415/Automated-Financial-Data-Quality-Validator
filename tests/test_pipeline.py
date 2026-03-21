@@ -1,8 +1,11 @@
 import pytest
 import pandas as pd
 import numpy as np
-from src.validate_quality import run_quality_checks, check_with_benchmark
-from src.run_pipeline3 import sanitize_index
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from validate_quality2 import run_quality_checks, check_with_benchmark
+from run_pipeline3 import sanitize_index
 
 # Test 1 SQL Validation Logic
 def test_duckdb_logic_error():
